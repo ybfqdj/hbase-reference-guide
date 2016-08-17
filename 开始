@@ -1,6 +1,6 @@
 2、快速开始-单机hbase
 手册描述了运行在本地文件系统的单机版hbase的例子，这并不是适当的hbase产品配置，但是可以让你可以用hbase进行试验，这一小节教你如何使用hbaseshell客户端在hbase上创建一张表，并在表中插入一列，进行put/scan操作，使表有效、无效，开启或停止hbase
-在本地文件系统上使用hbase并不能保证持久性。HDFS本地文件系统将失去编辑，如果文件没有正常关闭。当你在练习新的软件、开启或关闭服务时，这很有可能发生，你需要在hdfs上启动hbase以确保所有写入都被保存。在本地上运行时让你熟悉基本系统运行的捷径。
+在本地文件系统上使用hbase并不能保证持久性。如果文件没有正常关闭，HDFS本地文件系统将失去编辑。当你在练习新的软件、开启或关闭服务时，这很有可能发生，你需要在hdfs上启动hbase以确保所有写入都被保存。在本地上运行是让你熟悉基本系统运行的捷径。
 
 2.2 开始hbase
 procedure: 下载、配置并开启hbase
@@ -64,8 +64,59 @@ hadoop fs -ls /hbase
  local-master-backup.sh 2 3 5
  要kill一个备份master而不关闭整个集群，首先要找到进程id(PID) ,在/tmp/hbase-USER-X-master.pid中，
  cat /tmp/hbase-testuser-1-master.pid |xargs kill -9
- Start and stop additional RegionServers
+ 7、Start and stop additional RegionServers
  HRegionServer管理数据,一般来讲一个HRegionSerever管理集群中的一个节点，运行多个HRS在同一个系统中，可以用来测试伪分布式
- local-regionservers.sh It works in a similar way to the local-master-backup.sh command, in that each parameter you provide represents the port offset for an instance.每个RS需要连个端口，默认端口是16020和16030，然而增加的RegionServer基本端口不是默认端口，因为默认端B
- 
- 
+ local-regionservers.sh It works in a similar way to the local-master-backup.sh command, in that each parameter you provide represents the port offset for an instance.每个RS需要两个端口，默认端口是16020和16030，然而增加的RegionServer基本端口不是默认端口，因为默认端口被HMASTER使用，这个端口自hbase1.0开始也作为RegionServer，基本的端口用16200和16300代替。我们可以在一台服务器上运行99个额外的RegionServers，且可以这台服务器不是HMaster或备份HMaster。下面的命令在连续的端口（16202/16302）上启动四个增加的RS
+ $ .bin/local-regionservers.sh start 2 3 4 5
+ 8、stop hbase
+2.4. Advanced - Fully Distributed
+现实中，我们需要一个分布式的配置去完整的测试HBase并在真实的场景中使用它。在分布式配置中，集群包含多个节点，每个运行一个或多个HBase服务。包含主备MASTER，多个ZK节点，多个RegionSever节点。本文增加两个额外的节点到集群中，具体结构
+Procedure: Configure Passwordless SSH Access
+1、node-a：$ ssh-keygen -t rsa
+2、on node-b/c：create a .ssh/ directory in the user’s home directory
+3、Copy the public key to the other nodes. On each of the other nodes, create a new file called .ssh/authorized_keys if it does not already exist, and append the contents of the id_rsa.pub file to the end of it. Note that you also need to do this for node-a itself.
+$ cat id_rsa.pub >> ~/.ssh/authorized_keys
+4、Test password-less login.
+
+Procedure: Prepare node-a
+node-a将运行primary master和zk，但没有RS，所以停止node-a上的RS
+1、Edit conf/regionservers and remove the line which contains localhost. Add lines with the hostnames or IP addresses for node-b and node-c.
+即使你特别想运行RS在node-a，你应该用hostname来包含它，其他服务器将用来与它通信
+2、配置HBase在node-b上做为backup master
+Create a new file in conf/ called backup-masters, and add a new line to it with the hostname for node-b. In this demonstration, the hostname is node-b.example.com.
+3、配置ZK
+现实中，一定要认真考虑ZK的配置。这个配置将direct（指导？）hbase启动和管理一个ZK实例
+On node-a, edit conf/hbase-site.xml and add the following properties.
+
+<property>
+  <name>hbase.zookeeper.quorum</name>
+  <value>node-a.example.com,node-b.example.com,node-c.example.com</value>
+</property>
+<property>
+  <name>hbase.zookeeper.property.dataDir</name>
+  <value>/usr/local/zookeeper</value>
+</property>
+
+Procedure: Prepare node-b and node-c
+node-b will run a backup master server and a ZooKeeper instance.
+
+1、Download and unpack HBase.
+
+Download and unpack HBase to node-b, just as you did for the standalone and pseudo-distributed quickstarts.
+
+2、Copy the configuration files from node-a to node-b.and node-c.
+
+Each node of your cluster needs to have the same configuration information. Copy the contents of the conf/ directory to the conf/ directory on node-b and node-c.
+
+Procedure: Start and Test Your Cluster
+1、Be sure HBase is not running on any node.
+2、Start the cluster.
+
+On node-a, issue the start-hbase.sh command. Your output will be similar to that below.
+ZK先起来，然后是master，Rs最后是backup masters
+
+ZooKeeper Process Name
+The HQuorumPeer process is a ZooKeeper instance which is controlled and started by HBase. 
+
+Web UI Port Changes
+hbase0.98x以后版本，HTTP端口（hbase web ui）从60010（master）60030（each RS）变为 16010（master）16030（RS）

@@ -190,5 +190,60 @@ hbase.ipc.server.callqueue.handler.factor
 Default   0.1
 
 hbase.ipc.server.callqueue.read.ratio
-将呼叫队列分为读、写队列
+将呼叫队列分为读、写队列。分割间隔（0.0-1.0之间）乘以call queues。0表示不分割，即读和写请求都将被推入同一队列，小于0.5表示读少于写，0.5表示read= write，大于0.5read>write，1表示1个用于写其余都用于读
+Example: Given the total number of call queues being 10 a read.ratio of 0 means that: the 10 queues will contain both read/write requests. a read.ratio of 0.3 means that: 3 queues will contain only read requests and 7 queues will contain only write requests. a read.ratio of 0.5 means that: 5 queues will contain only read requests and 5 queues will contain only write requests. a read.ratio of 0.8 means that: 8 queues will contain only read requests and 2 queues will contain only write requests. a read.ratio of 1 means that: 9 queues will contain only read requests and 1 queues will contain only write requests.
+默认为0
 
+hbase.ipc.server.callqueue.scan.ratio
+已知读呼叫队列数，由所有队列数×callqueue.read.ratio，属性scan.ratio将把读队列分为长、短读队列，小于0.5 less long-read 。0或1指用同一组队列来get和scan
+Example: Given the total number of read call queues being 8 a scan.ratio of 0 or 1 means that: 8 queues will contain both long and short read requests. a scan.ratio of 0.3 means that: 2 queues will contain only long-read requests and 6 queues will contain only short-read requests. a scan.ratio of 0.5 means that: 4 queues will contain only long-read requests and 4 queues will contain only short-read requests. a scan.ratio of 0.8 means that: 6 queues will contain only long-read requests and 2 queues will contain only short-read requests
+默认0
+
+hbase.regionserver.msginterval
+RegionServer 发消息给 Master 时间间隔，单位是毫秒 默认3000
+
+hbase.regionserver.logroll.period
+提交commit log的时间间隔，不管是否记录足够的值
+默认3600000  =1h
+
+hbase.regionserver.logroll.errors.tolerated
+允许连续WAL关闭错误的次数，超过这个次数，将触发服务器中止，0将使RS中止如果在日志滚动中关闭当前WAL记录者失败。即使一个很小的值（2或3）将允许一个RS短暂越过HDFS错误（allow a region server to ride over transient HDFS errors）  默认 2
+
+hbase.regionserver.hlog.reader.impl
+WAL file reader的实现 Default    org.apache.hadoop.hbase.regionserver.wal.ProtobufLogReader
+
+hbase.regionserver.hlog.writer.impl
+Description  The WAL file writer implementation.  Default    org.apache.hadoop.hbase.regionserver.wal.ProtobufLogWriter
+
+hbase.regionserver.global.memstore.size
+ 在新的更新被屏蔽、被迫刷新新之前一个RS中所有memstore的最大size。默认为40%的heap，Updates are blocked and flushes are forced until size of all memstores in a region server hits hbase.regionserver.global.memstore.size.lower.limit. The default value in this configuration has been intentionally left empty in order to honor the old hbase.regionserver.global.memstore.upperLimit property if present.
+ 
+ hbase.regionserver.global.memstore.size.lower.limit
+Maximum size of all memstores in a region server before flushes are forced. Defaults to 95% of hbase.regionserver.global.memstore.size (0.95). A 100% value for this value causes the minimum possible flushing to occur when updates are blocked due to memstore limiting. The default value in this configuration has been intentionally left empty in order to honor the old hbase.regionserver.global.memstore.lowerLimit property if present.
+
+hbase.regionserver.optionalcacheflushinterval
+Description Maximum amount of time an edit lives in memory before being automatically flushed. 一个日志文件在内存中刷新之前停留的最长时间。Default 1 hour. Set it to 0 to disable automatic flushing.
+Default 3600000
+
+hbase.regionserver.dns.interface
+当使用DNS的时候，RegionServer用来上报的IP地址的网络接口名字。Default   default
+
+hbase.regionserver.dns.nameserver
+当使用DNS的时候，RegionServer使用的DNS的域名或者IP 地址，RegionServer用它来确定和master用来进行通讯和展示的域名.
+
+hbase.regionserver.region.split.policy
+一个决定一个region何时被分割的分割策略The various other split policies that are available currently are BusyRegionSplitPolicy, ConstantSizeRegionSplitPolicy, DisabledRegionSplitPolicy, DelimitedKeyPrefixRegionSplitPolicy, and KeyPrefixRegionSplitPolicy. DisabledRegionSplitPolicy blocks manual region splitting.
+Default    org.apache.hadoop.hbase.regionserver.IncreasingToUpperBoundRegionSplitPolicy
+
+hbase.regionserver.regionSplitLimit
+region数量限制，region分割的数量不会超过这个值，但是这不是一个硬限制，只是作为一个guideline，使regionserver停止分割 默认1000
+
+zookeeper.session.timeout
+ZK会话超时时间 毫秒  ，被用于两种不同的方式，首先备用在ZK客户端，即Hbase用来连接集合。也被HBase用于启动ZK server HBase把这个值传递给zk集群 默认90000
+
+zookeeper.znode.parent
+zooKeeper中的HBase的根ZNode。所有的HBase的ZooKeeper会用这个目录配置相对路径。默认情况下，所有的HBase的ZooKeeper文件路径是用相对路径，所以他们会都去这个目录下面。
+默认：/hbase
+
+zookeeper.znode.acl.parent
+znode的访问控制表 默认acl

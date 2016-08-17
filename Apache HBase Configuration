@@ -1,0 +1,63 @@
+Apache HBase Configuration
+本章将扩展快速开始一张，来进一步扩展HBase的配置。仔细阅读本章，特别是Basic Prerequisites来确保你HBase的测试和部署能够正常进行，并防止数据丢失。
+3. Configuration Files
+Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都在conf/目录，每个节点上要保持同步。
+
+HBase Configuration File Descriptions
+
+backup-masters
+默认不存在，使用纯文本文件（plain-text），写入哪台主机要启动备份Master进程，一行一个主机
+
+hadoop-metrics2-hbase.properties
+用来连接HBase Hadoop’s Metrics2 framework。See the Hadoop Wiki entry for more information on Metrics2. Contains only commented-out examples by default.
+
+hbase-env.cmd and hbase-env.sh
+用来设定HBase工作环境的脚本，包含java位置、java选项和其他环境变量，文件包含许多注释（commented-out）例子。
+
+hbase-policy.xml
+默认给RPC服务器使用的文件配置，用来对客户端请求作出授权决定，只在HBase安全启用下使用。
+
+hbase-site.xml
+HBase主配置文件，这个文件指定配置选项可以覆盖HBase默认的配置。我们可以在docs/hbase-default.xml下看到默认配置文件，但不要修改它。你也能在Hbase Configuration tab of HBase Web UI查看集群的整个有效配置。
+
+log4j.properties
+Configuration file for HBase logging via log4j.
+
+regionservers
+纯文本文件：包含在集群中要运行RS的主机列表。默认情况下这个文件包含单个本地主机，它应该包含主机名或者ip地址，一行一个，如果集群中每个节点都将运行一个RS在启本地端，那文件应该仅仅包含本地主机
+
+
+4. Basic Prerequisites
+这小节列出需要的服务和一些需要的系统配置
+In HBase 0.98.5 and newer, you must set JAVA_HOME on each node of your cluster. hbase-env.sh provides a handy mechanism to do this.
+ssh、DNS、Loopback IP（127.0.0.1 =》 localhost）、NTP
+Limits on Number of Files and Processes (ulimit)
+HBase是一个数据库，需要有能够打开大量文件的能力。许多linux发布版本都限制来了单个用户最多只能打卡1024个文件
+You can check this limit on your servers by running the command ulimit -n when logged in as the user which runs HBase. See the Troubleshooting section for some of the problems you may experience if the limit is too low. You may also notice errors such as the following:
+2010-04-06 03:04:37,542 INFO org.apache.hadoop.hdfs.DFSClient: Exception increateBlockOutputStream java.io.EOFException
+2010-04-06 03:04:37,542 INFO org.apache.hadoop.hdfs.DFSClient: Abandoning block blk_-6935524980745310745_1391901
+
+建议将限制提升到至少10000,最好是10240.，因为值通常被表示为1024的倍数。每个ColumnFamily 至少有一个存储文件，可能超过6个存储文件如果区域欠载。The number of open files required depends upon the number of ColumnFamilies and the number of regions. 下面是一个计算
+rs上打开文件可能值的公式：(StoreFiles per ColumnFamily) x (regions per RegionServer)
+例如，假定图表每个region有三个CF，每个CF有3个storefiles，在RS上有100个region，所以JVM将打开900=3×3×100个文件描述符，不包含JAR files, configuration files, and others.打开一个文件不会占用太多资源，而允许一个用户打开太多文件的风险也是极小的。
+另外一个限制是一个用户一次可以运行进程数，In Linux and Unix, the number of processes is set using the ulimit -u command.Under load, a ulimit -u that is too low can cause OutOfMemoryError exceptions. See Jack Levin’s major HDFS issues thread on the hbase-users mailing list, from 2011.
+配置文件描述符和进程数的最大值对正在运行HBase进程的用户来说，这是一个操作系统配置而不是HBase配置。确保设置已经为运行HBase的用户做过修改也是很重要的。去HBase log看下是哪个用户启动来HBase以及用户的ulimit配置。 A useful read setting config on your hadoop cluster is Aaron Kimball’s Configuration Parameters: What can you just ignore?
+4.1 Hadoop
+4.1.6. dfs.datanode.max.transfer.threads
+一个HDFS DN有一次能够serve的文件上界，读取文件前，确保你配置过Hadoop’s conf/hdfs-site.xml,setting the dfs.datanode.max.transfer.threads value to at least the following:
+
+<property>
+  <name>dfs.datanode.max.transfer.threads</name>
+  <value>4096</value>
+</property>
+
+Be sure to restart your HDFS after making the above configuration.没有配置这个项会出现奇怪的失败
+For example:
+
+10/12/08 20:10:31 INFO hdfs.DFSClient: Could not obtain block
+          blk_XXXXXXXXXXXXXXXXXXXXXX_YYYYYYYY from any node: java.io.IOException: No live nodes
+          contain current block. Will get new block locations from namenode and retry...
+          
+  
+  
+  

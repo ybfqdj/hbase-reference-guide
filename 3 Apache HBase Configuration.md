@@ -21,19 +21,22 @@ Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都�
 
 默认给RPC服务器使用的文件配置，用来对客户端请求作出授权决定，只在HBase安全启用下使用。
 
-_**hbase-site.xml**_
+**hbase-site.xml**
 
 HBase主配置文件，这个文件指定配置选项可以覆盖HBase默认的配置。我们可以在docs/hbase-default.xml下看到默认配置文件，但不要修改它。你也能在Hbase Configuration tab of HBase Web UI查看集群的整个有效配置。
 
-log4j.properties
+**log4j.properties**
 Configuration file for HBase logging via log4j.
 
-regionservers
+**regionservers**
+
 纯文本文件：包含在集群中要运行RS的主机列表。默认情况下这个文件包含单个本地主机，它应该包含主机名或者ip地址，一行一个，如果集群中每个节点都将运行一个RS在启本地端，那文件应该仅仅包含本地主机
 
 
-4. Basic Prerequisites
+##4. Basic Prerequisites
+
 这小节列出需要的服务和一些需要的系统配置
+
 In HBase 0.98.5 and newer, you must set JAVA_HOME on each node of your cluster. hbase-env.sh provides a handy mechanism to do this.
 ssh、DNS、Loopback IP（127.0.0.1 =》 localhost）、NTP
 Limits on Number of Files and Processes (ulimit)
@@ -44,11 +47,16 @@ You can check this limit on your servers by running the command ulimit -n when l
 
 建议将限制提升到至少10000,最好是10240.，因为值通常被表示为1024的倍数。每个ColumnFamily 至少有一个存储文件，可能超过6个存储文件如果区域欠载。The number of open files required depends upon the number of ColumnFamilies and the number of regions. 下面是一个计算
 rs上打开文件可能值的公式：(StoreFiles per ColumnFamily) x (regions per RegionServer)
+
 例如，假定图表每个region有三个CF，每个CF有3个storefiles，在RS上有100个region，所以JVM将打开900=3×3×100个文件描述符，不包含JAR files, configuration files, and others.打开一个文件不会占用太多资源，而允许一个用户打开太多文件的风险也是极小的。
+
 另外一个限制是一个用户一次可以运行进程数，In Linux and Unix, the number of processes is set using the ulimit -u command.Under load, a ulimit -u that is too low can cause OutOfMemoryError exceptions. See Jack Levin’s major HDFS issues thread on the hbase-users mailing list, from 2011.
+
 配置文件描述符和进程数的最大值对正在运行HBase进程的用户来说，这是一个操作系统配置而不是HBase配置。确保设置已经为运行HBase的用户做过修改也是很重要的。去HBase log看下是哪个用户启动来HBase以及用户的ulimit配置。 A useful read setting config on your hadoop cluster is Aaron Kimball’s Configuration Parameters: What can you just ignore?
-4.1 Hadoop
-4.1.6. dfs.datanode.max.transfer.threads
+
+###4.1 Hadoop
+####4.1.6. dfs.datanode.max.transfer.threads
+
 一个HDFS DN有一次能够serve的文件上界，读取文件前，确保你配置过Hadoop’s conf/hdfs-site.xml,setting the dfs.datanode.max.transfer.threads value to at least the following:
 
 <property>
@@ -65,57 +73,72 @@ For example:
           
   
   
-4.2. ZooKeeper Requirements   
+###4.2. ZooKeeper Requirements   
+
 ZooKeeper 3.4.x is required as of HBase 1.0.0. HBase makes use of the multi functionality that is only available since 3.4.0 (The useMulti configuration option defaults to true in HBase 1.0.0). See HBASE-12241 (The crash of regionServer when taking deadserver’s replication queue breaks replication) and HBASE-6775 (Use ZK.multi when available for HBASE-6710 0.92/0.94 compatibility fix) for background.
 
 
 
-5. HBase run modes: Standalone and Distributed
+##5. HBase run modes: Standalone and Distributed
+
 HBase有两种启动模式 Standalone and Distributed。out of the box（初始？）HBase以单机模式运行。无论你用哪种模式，你都要配置在HBase conf目录下的相关文件，至少，你要配置hbase-env.sh的java_home,在这个文件中设置Hbase环境变量如堆大小、
 其他JVM选项、log文件位置等
 
-5.1. Standalone HBase
+###5.1. Standalone HBase
+
 默认模式，已在快速开始中描述过，这中模式Hbase不使用HDFS，而是用本地文件系统代替--运行所有HBase服务和一个本地ZK在同一个JVM中。ZK和一个已知的端口绑定在一起，这样客户端可以和HBase通信
 
 
-5.2. Distributed
+###5.2. Distributed
+
 分布式模式可分为伪分布式和全分布式。伪分布式所有守护程序都运行在一个节点上，而全分布式守护程序分布在集群中的所有节点上。这种命名法（nomenclature）来自Hadoop
 伪分布式可以在本地文件和HDFS上运行，而全分布式只能在HDFS上。See the Hadoop documentation for how to set up HDFS. A good walk-through for setting up HDFS on Hadoop 2 can be found at http://www.alexjf.net/blog/distributed-systems/hadoop-yarn-installation-definitive-guide.
 
-5.2.1. Pseudo-distributed
+####5.2.1. Pseudo-distributed
+
 A pseudo-distributed mode is simply a fully-distributed mode run on a single host. Use this configuration testing and prototyping on HBase. Do not use this configuration for production nor for evaluating HBase performance.
 
-5.3. Fully-distributed
+###5.3. Fully-distributed
+
 默认情况下HBase运行以standalone运行，standalone和pseudo-distributed可用来小规模测试，对生产环境分布式更合适In distributed mode, multiple instances of HBase daemons run on multiple servers in the cluster.
 像伪分布式一样，你要设置hbase-cluster.distributed这个属性为true。hbase.rootdir要配置成可用 的HDFS文件系统。另外，集群中的节点要配置成 RegionServers, ZooKeeper QuorumPeers, and backup HMaster servers. 
 分布式RegionServers
+
 一般情况下，你的集群将包含多个RS、主备Master、ZK守护程序运行在不同服务器上，conf/regionservers 在master上的这个文件包含主机表，每个主机一行，所有表中的主机上的RS将随着master服务起停。
+
 Example 7. Example Distributed HBase Cluster
 这是一个包含基本元素（bare-bones）的分布式Hbase集群的配置文件 conf/hbase-site.xml 实际工作的集群可能包含更多自定义的配置参数。大多数HBase配置指令有默认值，通常使用这些默认值，除非被 hbase-site.xml覆盖。
 
-Procedure: HDFS Client Configuration
+**Procedure: HDFS Client Configuration**
+
 1、注：如果你在你的Hadoop集群上改变HDFS客户端配置，例如HDFS客户端的配置指令（directives），不是服务端的配置，你必须使用如下的方法来启动HBase并应用这些配置改变。
-  a、在hbase-env.sh中增加你的HADOOP_CONF_DIR到环境变量HBASE_CLASSPATH
-  b、在 ${HBASE_HOME}/conf下复制或最好链接(symlinks)一个hdfs-site.xml,或
-  c、仅仅一点HDFS客户端配置把它们加入hbase-site.xml
-  如：属性dfs.replication，如果你洗哪个运行5个副本，HBase将以默认3来创建文件，除非你做上面的操作使配置对HBase可用
+>  a.在hbase-env.sh中增加你的HADOOP_CONF_DIR到环境变量HBASE_CLASSPATH
+   b.在 ${HBASE_HOME}/conf下复制或最好链接(symlinks)一个hdfs-site.xml,或
+   c.仅仅一点HDFS客户端配置把它们加入hbase-site.xml
+   如：属性dfs.replication，如果你洗哪个运行5个副本，HBase将以默认3来创建文件，除非你做上面的操作使配置对HBase可用
   
   
-  6. Running and Confirming Your Installation
+##6. Running and Confirming Your Installation
+
 确保首先运行HDFS。 在HADOOP_HOME directory目录执行bin/start-hdfs.sh，同过put和get文件进行测试确保HDFS运行。HBase一般不使用MR或YARN daemons。这些不用被启动
+
 如果你在管理你自己的ZK，启动它并确定它在运行，不然HBase会启动ZK作为其启动进程的一部分
 bin/start-hbase.sh
+
 现在我们应该又拉一个正在运行的HBase instance，日志可以在logs子目录下找到，检查它们特别是如果Hbase没有正常启动
 HBase会拉起一个UI来列出关键属性。默认情况下部署在主节点端口16010上，RS在16020以及一个 informational HTTP server在16030
+
 Prior to HBase 0.98 the master UI was deployed on port 60010, and the HBase RegionServers UI on port 60030.
 
 To stop HBase after exiting the HBase shell enter
 $ ./bin/stop-hbase.sh
+
 关闭可能要花点时间，特别是如果你的集群由许多机器组成。如果在分布式系统上运行，一定要确保所有HBase关闭，才能结束Hadoop daemons
 
 
-7. Default Configuration
-7.1. hbase-site.xml and hbase-default.xml
+##7. Default Configuration
+###7.1. hbase-site.xml and hbase-default.xml
+
 就像在Hadoop中一样在hdfs-site.xml文件中加入特定的HDFS配置，对HBase来说在conf/hbase-site.xml文件中编辑特定的自定义配置For the list of configurable properties, see hbase default configurations below or view the raw hbase-default.xml source file in the HBase source code at src/main/resources.
 不是所有的配置选项都会在hbase-default.xml中体现，那些很少有人会改的配置只在代码中，唯一的方法去改变这些配置的方法就是去阅读源代码
 Currently, changes here will require a cluster restart for HBase to notice the change

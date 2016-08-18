@@ -6,9 +6,11 @@ Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都�
 ###HBase Configuration File Descriptions
 
 **backup-masters**
+
 默认不存在，使用纯文本文件（plain-text），写入哪台主机要启动备份Master进程，一行一个主机
 
 **hadoop-metrics2-hbase.properties**
+
 用来连接HBase Hadoop’s Metrics2 framework。See the Hadoop Wiki entry for more information on Metrics2. Contains only commented-out examples by default.
 
 **hbase-env.cmd and hbase-env.sh**
@@ -17,7 +19,8 @@ Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都�
 **hbase-policy.xml**
 默认给RPC服务器使用的文件配置，用来对客户端请求作出授权决定，只在HBase安全启用下使用。
 
-hbase-site.xml
+_**hbase-site.xml**_
+
 HBase主配置文件，这个文件指定配置选项可以覆盖HBase默认的配置。我们可以在docs/hbase-default.xml下看到默认配置文件，但不要修改它。你也能在Hbase Configuration tab of HBase Web UI查看集群的整个有效配置。
 
 log4j.properties

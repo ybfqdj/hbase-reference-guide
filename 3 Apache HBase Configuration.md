@@ -1570,4 +1570,18 @@ HBase有一个合理的保守的配置，这样可以运作在所有的机器上
 HBase使用wal来恢复没有及时写入硬盘中的memstore数据，当发生RS错误时。一般wal略小于HDFS块(by default a HDFS block is 64Mb and a WAL file is ~60Mb).
 Hbase 也对wal数量有限制，这样可以保证系统恢复时不需要太多的数据恢复。这个设置预memstore的配置有关，这样所有必要数据都能适用。It is recommended to allocate enough WAL files to store at least that much data (when all memstores are close to full). For example, with 16Gb RS heap, default memstore settings (0.4), and default WAL file size (~60Mb), 16Gb*0.4/60, the starting point for WAL file count is ~109. However, as all memstores are not expected to be full all the time, less WAL files can be allocated.
 
+####9.2.7. Managed Splitting
 
+HBase通常根据_hbase-default.xml_和_hbase-site.xml_来进行region分割，重要设定包括_hbase.regionserver.region.split.policy_,_hbase.hregion.max.filesize_, _hbase.regionserver.regionSplitLimit_。简单来说，分割就是当region增长到_hbase.hregion.max.filesize_时进行的分裂。大多数应用场合和时间内，使用自动分割。
+
+See manual region splitting decisions for more information about manual region splitting.
+
+除了HBase自动管理分割，也可以选择手动管理分割，HBase 0.9.0.0后增加的功能。如果你很了解你的密钥空间（keyspace？），手动管理分割会有用，否则让Hbase来替你决定如何分割，手动分割能减少负载下的region创造和移动。它也能使我们知道region边界或边界不变。手动分割使我们更容易去交错、定时执行合并、切割操作如此可以降低网络IO负载。
+
+**Disable Automatic Splitting**
+将_hbase.hregion.max.filesize_设置为一个较大的值可以关闭自动分割，例如100G， It is not recommended to set it to its absolute maximum value of Long.MAX_VALUE.
+
+> **Automatic Splitting Is Recommended**
+> 如果你在诊断问题或者数据快速增长，关闭自动分割。但如果集群环境稳定时，建议还是打开自动分割。自己管理分割的好处还有争议。
+
+**Determine the Optimal Number of Pre-Split Regions**

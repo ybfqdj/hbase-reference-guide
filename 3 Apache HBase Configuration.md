@@ -1627,14 +1627,14 @@ See master.processes.loadbalancer for more information on the LoadBalancer.
 
  Set the following in the RegionServer.
 > <property>
-    <name>hbase.lease.recovery.dfs.timeout</name>
-    <value>23000</value>
-    <description>How much time we allow elapse between calls to recover lease.
-    Should be larger than the dfs timeout.</description>
-  </property>
-  <property>
-    <name>dfs.client.socket-timeout</name>
-    <value>10000</value>
-    <description>Down the DFS timeout from 60 to 10 seconds.</description>
-  </property>
+>   <name>hbase.lease.recovery.dfs.timeout</name>
+>   <value>23000</value>
+>   <description>How much time we allow elapse between calls to recover lease.
+>   Should be larger than the dfs timeout.</description>
+> </property>
+> <property>
+>   <name>dfs.client.socket-timeout</name>
+>   <value>10000</value>
+>   <description>Down the DFS timeout from 60 to 10 seconds.</description>
+> </property>
 

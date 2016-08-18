@@ -1626,15 +1626,16 @@ See master.processes.loadbalancer for more information on the LoadBalancer.
 文章HBASE-8354 forces Namenode into loop with lease recovery requests is messy，但是关于low timeouts和怎样有效的快速恢复的讨论还是不错的，其中包含被加入hdfs中补丁的引用。Read the Varun Sharma comments. The below suggested configurations are Varun’s suggestions distilled and tested. Make sure you are running on a late-version HDFS so you have the fixes he refers too and himself adds to HDFS that help HBase MTTR 
 
  Set the following in the RegionServer.
-> <property>
->   <name>hbase.lease.recovery.dfs.timeout</name>
->   <value>23000</value>
->   <description>How much time we allow elapse between calls to recover lease.
->   Should be larger than the dfs timeout.</description>
-> </property>
-> <property>
->   <name>dfs.client.socket-timeout</name>
->   <value>10000</value>
->   <description>Down the DFS timeout from 60 to 10 seconds.</description>
-> </property>
+ 
+<property>
+  <name>hbase.lease.recovery.dfs.timeout</name>
+  <value>23000</value>
+  <description>How much time we allow elapse between calls to recover lease.
+  Should be larger than the dfs timeout.</description>
+</property>
+<property>
+  <name>dfs.client.socket-timeout</name>
+  <value>10000</value>
+  <description>Down the DFS timeout from 60 to 10 seconds.</description>
+</property>
 

@@ -11,7 +11,7 @@ Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都�
 
 **hadoop-metrics2-hbase.properties**
 
->用来连接HBase Hadoop’s Metrics2 framework。See the Hadoop Wiki entry for more information on Metrics2. >Contains only commented-out examples by default.
+>用来连接HBase Hadoop’s Metrics2 framework。See the Hadoop Wiki entry for more information on Metrics2. Contains only commented-out examples by default.
 
 **hbase-env.cmd and hbase-env.sh**
 

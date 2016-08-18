@@ -112,9 +112,12 @@ Example 7. Example Distributed HBase Cluster
 **Procedure: HDFS Client Configuration**
 
 1、注：如果你在你的Hadoop集群上改变HDFS客户端配置，例如HDFS客户端的配置指令（directives），不是服务端的配置，你必须使用如下的方法来启动HBase并应用这些配置改变。
->  a.在hbase-env.sh中增加你的HADOOP_CONF_DIR到环境变量HBASE_CLASSPATH
-   b.在 ${HBASE_HOME}/conf下复制或最好链接(symlinks)一个hdfs-site.xml,或
-   c.仅仅一点HDFS客户端配置把它们加入hbase-site.xml
+
+> a.在hbase-env.sh中增加你的HADOOP_CONF_DIR到环境变量HBASE_CLASSPATH
+>   
+> b.在 ${HBASE_HOME}/conf下复制或最好链接(symlinks)一个hdfs-site.xml,或
+>
+> c.仅仅一点HDFS客户端配置把它们加入hbase-site.xml
    如：属性dfs.replication，如果你洗哪个运行5个副本，HBase将以默认3来创建文件，除非你做上面的操作使配置对HBase可用
   
   
@@ -140,102 +143,137 @@ $ ./bin/stop-hbase.sh
 ###7.1. hbase-site.xml and hbase-default.xml
 
 就像在Hadoop中一样在hdfs-site.xml文件中加入特定的HDFS配置，对HBase来说在conf/hbase-site.xml文件中编辑特定的自定义配置For the list of configurable properties, see hbase default configurations below or view the raw hbase-default.xml source file in the HBase source code at src/main/resources.
+
 不是所有的配置选项都会在hbase-default.xml中体现，那些很少有人会改的配置只在代码中，唯一的方法去改变这些配置的方法就是去阅读源代码
+
 Currently, changes here will require a cluster restart for HBase to notice the change
 
-7.2. HBase Default Configuration
-hbase.tmp.dir
+###7.2. HBase Default Configuration
+
+**hbase.tmp.dir**
+
 本地文件系统的临时目录，为这个设定指定一个比/tmp（the usual resolve for java.io.tmpdir, as the '/tmp' directory is cleared on machine restart.）更持久的位置
 Default ${java.io.tmpdir}/hbase-${user.name}
 
-hbase.rootdir
-Description：The directory shared by region servers and into which HBase persists. （Rs共享的目录以及HBase存在的目录）URL要严格满足文件系统，例如指定hdfs://namenode.example.org:9000/hbase   这里的HDFS目录‘/hbase’，HDFS实例的NN运行在namenode.example.org on port 9000  By default, we write to whatever ${hbase.tmp.dir} is set too — usually /tmp — so change this configuration or else all data will be lost on machine restart.
+**hbase.rootdir**
 
-hbase.fs.tmp.dir
-Description：A staging directory （临时目录）in default file system (HDFS) for keeping temporary data.
-Default
-/user/${user.name}/hbase-staging
+_Description_：The directory shared by region servers and into which HBase persists. （Rs共享的目录以及HBase存在的目录）URL要严格满足文件系统，例如指定hdfs://namenode.example.org:9000/hbase   这里的HDFS目录‘/hbase’，HDFS实例的NN运行在namenode.example.org on port 9000  By default, we write to whatever ${hbase.tmp.dir} is set too — usually /tmp — so change this configuration or else all data will be lost on machine restart.
 
-hbase.bulkload.staging.dir
-Description：批量加载（bulk loading）的临时目录
-Default
-${hbase.fs.tmp.dir}
+**hbase.fs.tmp.dir**
 
-hbase.cluster.distributed
-Description：集群运行模式，默认false
+_Description_：A staging directory （临时目录）in default file system (HDFS) for keeping temporary data.
+_Default_  /user/${user.name}/hbase-staging
 
-hbase.zookeeper.quorum
-Description zk集合以逗号分割的服务器表（Comma separated list of servers in the ZooKeeper ensemble？）默认为standalone和伪分布式设置为本地主机。对一个分布式来说，要设置为完整的ZK集合服务器，如果hbase-env.sh 中HBASE_MANAGES_Z被设置，这个是哪个hbase将start/stop ZK随着集群start/stop的servers表。客户端将使用这个表中的集合成员，and put it together with the hbase.zookeeper.clientPort config. and pass it into zookeeper constructor as the connectString parameter.
-Default
-localhost
+**hbase.bulkload.staging.dir**
 
-hbase.local.dir
-在本地文件系统上的目录用于本地存储  Default   ${hbase.tmp.dir}/local/
+_Description_：批量加载（bulk loading）的临时目录
+_Default_ :${hbase.fs.tmp.dir}
 
-hbase.master.port
-HBase Master绑定的端口  Default 16000
-hbase.master.info.port
+**hbase.cluster.distributed**
+
+_Description_：集群运行模式，默认false
+
+**hbase.zookeeper.quorum**
+
+_Description_: zk集合以逗号分割的服务器表（Comma separated list of servers in the ZooKeeper ensemble？）默认为standalone和伪分布式设置为本地主机。对一个分布式来说，要设置为完整的ZK集合服务器，如果hbase-env.sh 中HBASE_MANAGES_Z被设置，这个是哪个hbase将start/stop ZK随着集群start/stop的servers表。客户端将使用这个表中的集合成员，and put it together with the hbase.zookeeper.clientPort config. and pass it into zookeeper constructor as the connectString parameter.
+_Default_: localhost
+
+**hbase.local.dir**
+
+在本地文件系统上的目录用于本地存储  _Default_   ${hbase.tmp.dir}/local/
+
+**hbase.master.port**
+
+HBase Master绑定的端口  _Default_ 16000
+
+**hbase.master.info.port**
+
 The port for the HBase Master web UI. Set to -1 if you do not want a UI instance run.  
-默认：16010
+_默认_：16010
 
-hbase.master.info.bindAddress   Description  The bind address for the HBase Master web UI  Default  0.0.0.0
+**hbase.master.info.bindAddress**
 
-hbase.master.logcleaner.plugins
-#LogCleaner 定期清理.oldlogs目录下的log。它会从hbase.master.logcleaner.plugins配置里加载所有BaseLogCleanerDelegate。某个log可以被删除，只有所有delegate都同意。
+_Description_:  The bind address for the HBase Master web UI  _Default_  0.0.0.0
+
+**hbase.master.logcleaner.plugins**
+
+LogCleaner 定期清理.oldlogs目录下的log。它会从hbase.master.logcleaner.plugins配置里加载所有BaseLogCleanerDelegate。某个log可以被删除，只有所有delegate都同意。
+
 逗号分割的BaseLogCleanerDelegate表，会被LogsCleaner service引用。这些WAL（预写日志） cleaner按顺序被引用，所以可以把先调用的放到前面。你也可以补充自己的BaseLogCleanerDelegate，只要加到HBase的classpath下，要写下合格的完整类名，Always add the above default log cleaners in the list.
-Default    org.apache.hadoop.hbase.master.cleaner.TimeToLiveLogCleaner
 
-hbase.master.logcleaner.ttl
-WAL可以在.oldlogdir中保存的最长时间，之后会被Master线程清除 默认：600000
+_Default_    org.apache.hadoop.hbase.master.cleaner.TimeToLiveLogCleaner
 
-hbase.master.hfilecleaner.plugins
+**hbase.master.logcleaner.ttl**
+
+WAL可以在.oldlogdir中保存的最长时间，之后会被Master线程清除 _默认_：600000
+
+**hbase.master.hfilecleaner.plugins**
+
 A comma-separated list of BaseHFileCleanerDelegate invoked by the HFileCleaner service. These HFiles cleaners are called in order, so put the cleaner that prunes the most files in front. To implement your own BaseHFileCleanerDelegate, just put it in HBase’s classpath and add the fully qualified class name here. Always add the above default log cleaners in the list as they will be overwritten in hbase-site.xml.
-#HFileCleaner  定期清理.archive目录下的HFile。它会从hbase.master.hfilecleaner.plugins配置里加载所有BaseHFileCleanerDelegate。
-Default  org.apache.hadoop.hbase.master.cleaner.TimeToLiveHFileCleaner
 
-hbase.master.infoserver.redirect
+HFileCleaner  定期清理.archive目录下的HFile。它会从hbase.master.hfilecleaner.plugins配置里加载所有BaseHFileCleanerDelegate。
+
+_Default_:org.apache.hadoop.hbase.master.cleaner.TimeToLiveHFileCleaner
+
+**hbase.master.infoserver.redirect**
+
 不管Master是否listen to web ui 端口，重定向请求到 Master and RegionServer的web ui server
-默认 true
+_默认_ true
 
-hbase.regionserver.port
-RS绑定的端口号 默认16020
-hbase.regionserver.info.port  
+**hbase.regionserver.port**
+
+RS绑定的端口号 _默认_16020
+
+**hbase.regionserver.info.port**
+
 The port for the HBase RegionServer web UI Set to -1 if you do not want the RegionServer UI to run.
-默认16030
+_默认_:16030
 
-hbase.regionserver.info.bindAddress
-Description   The address for the HBase RegionServer web UI   Default    0.0.0.0
+**hbase.regionserver.info.bindAddress**
 
-hbase.regionserver.info.port.auto
+_Description_   The address for the HBase RegionServer web UI   _Default_    0.0.0.0
+
+**hbase.regionserver.info.port.auto**
+
 Master或RS是否搜索端口来绑定页面，打开自动端口搜索如果hbase.regionserver.info.port被占用。Useful for testing, turned off by default.
 
-hbase.regionserver.handler.count
+**hbase.regionserver.handler.count**
+
 RegionServers受理的RPC Server实例数量，对Master来说是Master能够受理的handler数量
-默认30
+_默认_30
 
-hbase.ipc.server.callqueue.handler.factor
+**hbase.ipc.server.callqueue.handler.factor**
+
 呼叫队列数量决定因素，0代表只有一个队列用于所有handler共享，1代表每个handler有自己的队列
-Default   0.1
+_Default_   0.1
 
-hbase.ipc.server.callqueue.read.ratio
+**hbase.ipc.server.callqueue.read.ratio**
+
 将呼叫队列分为读、写队列。分割间隔（0.0-1.0之间）乘以call queues。0表示不分割，即读和写请求都将被推入同一队列，小于0.5表示读少于写，0.5表示read= write，大于0.5read>write，1表示1个用于写其余都用于读
-Example: Given the total number of call queues being 10 a read.ratio of 0 means that: the 10 queues will contain both read/write requests. a read.ratio of 0.3 means that: 3 queues will contain only read requests and 7 queues will contain only write requests. a read.ratio of 0.5 means that: 5 queues will contain only read requests and 5 queues will contain only write requests. a read.ratio of 0.8 means that: 8 queues will contain only read requests and 2 queues will contain only write requests. a read.ratio of 1 means that: 9 queues will contain only read requests and 1 queues will contain only write requests.
+
+_Example_: Given the total number of call queues being 10 a read.ratio of 0 means that: the 10 queues will contain both read/write requests. a read.ratio of 0.3 means that: 3 queues will contain only read requests and 7 queues will contain only write requests. a read.ratio of 0.5 means that: 5 queues will contain only read requests and 5 queues will contain only write requests. a read.ratio of 0.8 means that: 8 queues will contain only read requests and 2 queues will contain only write requests. a read.ratio of 1 means that: 9 queues will contain only read requests and 1 queues will contain only write requests.
+
 默认为0
 
-hbase.ipc.server.callqueue.scan.ratio
-已知读呼叫队列数，由所有队列数×callqueue.read.ratio，属性scan.ratio将把读队列分为长、短读队列，小于0.5 less long-read 。0或1指用同一组队列来get和scan
-Example: Given the total number of read call queues being 8 a scan.ratio of 0 or 1 means that: 8 queues will contain both long and short read requests. a scan.ratio of 0.3 means that: 2 queues will contain only long-read requests and 6 queues will contain only short-read requests. a scan.ratio of 0.5 means that: 4 queues will contain only long-read requests and 4 queues will contain only short-read requests. a scan.ratio of 0.8 means that: 6 queues will contain only long-read requests and 2 queues will contain only short-read requests
-默认0
+**hbase.ipc.server.callqueue.scan.ratio**
 
-hbase.regionserver.msginterval
+已知读呼叫队列数，由所有队列数×callqueue.read.ratio，属性scan.ratio将把读队列分为长、短读队列，小于0.5 less long-read 。0或1指用同一组队列来get和scan
+
+_Example_: Given the total number of read call queues being 8 a scan.ratio of 0 or 1 means that: 8 queues will contain both long and short read requests. a scan.ratio of 0.3 means that: 2 queues will contain only long-read requests and 6 queues will contain only short-read requests. a scan.ratio of 0.5 means that: 4 queues will contain only long-read requests and 4 queues will contain only short-read requests. a scan.ratio of 0.8 means that: 6 queues will contain only long-read requests and 2 queues will contain only short-read requests
+_默认_:0
+
+**hbase.regionserver.msginterval**
+
 RegionServer 发消息给 Master 时间间隔，单位是毫秒 默认3000
 
-hbase.regionserver.logroll.period
-提交commit log的时间间隔，不管是否记录足够的值
-默认3600000  =1h
+**hbase.regionserver.logroll.period**
 
-hbase.regionserver.logroll.errors.tolerated
-允许连续WAL关闭错误的次数，超过这个次数，将触发服务器中止，0将使RS中止如果在日志滚动中关闭当前WAL记录者失败。即使一个很小的值（2或3）将允许一个RS短暂越过HDFS错误（allow a region server to ride over transient HDFS errors）  默认 2
+提交commit log的时间间隔，不管是否记录足够的值
+_默认_:3600000  =1h
+
+**hbase.regionserver.logroll.errors.tolerated**
+
+允许连续WAL关闭错误的次数，超过这个次数，将触发服务器中止，0将使RS中止如果在日志滚动中关闭当前WAL记录者失败。即使一个很小的值（2或3）将允许一个RS短暂越过HDFS错误（allow a region server to ride over transient HDFS errors）  _默认_ 2
 
 hbase.regionserver.hlog.reader.impl
 WAL file reader的实现 Default    org.apache.hadoop.hbase.regionserver.wal.ProtobufLogReader

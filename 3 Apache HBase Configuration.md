@@ -14,9 +14,11 @@ Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都�
 用来连接HBase Hadoop’s Metrics2 framework。See the Hadoop Wiki entry for more information on Metrics2. Contains only commented-out examples by default.
 
 **hbase-env.cmd and hbase-env.sh**
+
 用来设定HBase工作环境的脚本，包含java位置、java选项和其他环境变量，文件包含许多注释（commented-out）例子。
 
 **hbase-policy.xml**
+
 默认给RPC服务器使用的文件配置，用来对客户端请求作出授权决定，只在HBase安全启用下使用。
 
 _**hbase-site.xml**_

@@ -1585,3 +1585,19 @@ See manual region splitting decisions for more information about manual region s
 > 如果你在诊断问题或者数据快速增长，关闭自动分割。但如果集群环境稳定时，建议还是打开自动分割。自己管理分割的好处还有争议。
 
 **Determine the Optimal Number of Pre-Split Regions**
+
+最优的pre-split region数量与你的应用和环境有关，一个好的经验是每个server以10个pre-split region开始，并花点时间观察数据增长。太少的regions总比出错要好（ It is better to err on the side of too few regions），也可以随后再rolling split。最优的regions数量依赖与你的region中的最大的storefile。如果数据量在增长，那么最大的storefile的大小也会随着时间增长。在一个定时的主合并过程中（最优的number of region的）目标是最大的region刚刚足够大，而一个合并算法正要进行合并（The goal is for the largest region to be just large enough that the compaction selection algorithm only compacts it during a timed major compaction. ）否则，当大量region同时进行合并时，集群可能会疯狂运行。要意识到是数据增长引起的compaction storms而不是手动分割的决定。
+
+如果regions被分为太多大的regions，你可以增加major compaction的间隔，通过配置HConstants.MAJOR_COMPACTION_PERIOD 这一项。
+
+####9.2.8. Managed Compactions
+
+默认情况下，major compactions计划每7天运行一次。0.96x之前，major compactions是每天运行一次的。
+
+如果你需要精确控制何时多久major compactions运行一次你可以关闭它。See the entry for hbase.hregion.majorcompaction in the compaction.parameters table for details.
+
+**Do Not Disable Major Compactions**
+> major compactions对StoreFile的清理是绝对有必要的。不要一起关闭它们。可以同感HBase shell或Admin API手动执行major Compactions
+
+####9.2.9. Speculative Execution预测执行
+MR的Speculative Execution是默认启用的。对HBase 集群来说通常建议在系统级关闭Speculative Execution，除非你在某个case中需要它，

@@ -1,4 +1,4 @@
-Apache HBase Configuration
+#Apache HBase Configuration
 本章将扩展快速开始一张，来进一步扩展HBase的配置。仔细阅读本章，特别是Basic Prerequisites来确保你HBase的测试和部署能够正常进行，并防止数据丢失。
 3. Configuration Files
 Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都在conf/目录，每个节点上要保持同步。

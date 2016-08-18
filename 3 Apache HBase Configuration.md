@@ -1,5 +1,5 @@
 #Apache HBase Configuration
-本章将扩展快速开始一张，来进一步扩展HBase的配置。仔细阅读本章，特别是Basic Prerequisites来确保你HBase的测试和部署能够正常进行，并防止数据丢失。
+本章将扩展快速开始一章，来进一步扩展HBase的配置。仔细阅读本章，特别是Basic Prerequisites来确保你HBase的测试和部署能够正常进行，并防止数据丢失。
 ##3. Configuration Files
 Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都在conf/目录，每个节点上要保持同步。
 
@@ -1600,4 +1600,24 @@ See manual region splitting decisions for more information about manual region s
 > major compactions对StoreFile的清理是绝对有必要的。不要一起关闭它们。可以同感HBase shell或Admin API手动执行major Compactions
 
 ####9.2.9. Speculative Execution预测执行
-MR的Speculative Execution是默认启用的。对HBase 集群来说通常建议在系统级关闭Speculative Execution，除非你在某个case中需要它，
+
+MR的Speculative Execution是默认启用的。对HBase 集群来说通常建议在系统级关闭Speculative Execution，除非你在某个case中需要它，这个可以每个job配置一次。Set the properties _**mapreduce.map.speculative**_ and _**mapreduce.reduce.speculative**_ to false.
+
+###9.3.其他配置
+
+####9.3.1.Balancer
+
+均衡是一个运行在master上重分配集群regions的定时操作 It is configured via _**hbase.balancer.period**_ and defaults to 300000 (5 minutes).
+
+See master.processes.loadbalancer for more information on the LoadBalancer.
+
+####9.3.2.禁用块缓存（Disabling Blockcache）
+
+不要关闭块缓存（如果要关闭的话，设置_**hbase.block.cache.size**_为0）。当前，如果关闭不太好，因为RS要花很多时间不停加载HFile指数。如果工作集如此配置块缓存是没有好处的，至少要保证HFile指数在块缓存中的大小（可以通过查询区域服务器的UI，得到大致的数值。可以看到网页的上方有块指数值统计）。
+
+####9.3.3. Nagle’s or the small package problem
+
+如果HBase操作时有40ms左右的偶尔延迟，试下Nagles‘s设置。
+
+####9.3.4.Better Mean Time to Recover (MTTR)
+

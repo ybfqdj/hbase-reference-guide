@@ -1482,37 +1482,38 @@ The HBase Master and the HDFS NameNode are running on the node example0. * Regio
 主要配置文件hbase-site.xml, regionservers, and hbase-env.sh
 ####8.1.1. hbase-site.xml
 
-<?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-<configuration>
-  <property>
-    <name>hbase.zookeeper.quorum</name>
-    <value>example1,example2,example3</value>
-    <description>The directory shared by RegionServers.
-    </description>
-  </property>
-  <property>
-    <name>hbase.zookeeper.property.dataDir</name>
-    <value>/export/zookeeper</value>
-    <description>Property from ZooKeeper config zoo.cfg.
-    The directory where the snapshot is stored.
-    </description>
-  </property>
-  <property>
-    <name>hbase.rootdir</name>
-    <value>hdfs://example0:8020/hbase</value>
-    <description>The directory shared by RegionServers.
-    </description>
-  </property>
-  <property>
-    <name>hbase.cluster.distributed</name>
-    <value>true</value>
-    <description>The mode the cluster will be in. Possible values are
-      false: standalone and pseudo-distributed setups with managed ZooKeeper
-      true: fully-distributed with unmanaged ZooKeeper Quorum (see hbase-env.sh)
-    </description>
-  </property>
-</configuration>
+>    
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+    <configuration>
+    <property>
+      <name>hbase.zookeeper.quorum</name>
+      <value>example1,example2,example3</value>
+      <description>The directory shared by RegionServers.
+      </description>
+    </property>
+    <property>
+      <name>hbase.zookeeper.property.dataDir</name>
+      <value>/export/zookeeper</value>
+      <description>Property from ZooKeeper config zoo.cfg.
+      The directory where the snapshot is stored.
+      </description>
+    </property>
+    <property>
+      <name>hbase.rootdir</name>
+      <value>hdfs://example0:8020/hbase</value>
+      <description>The directory shared by RegionServers.
+      </description>
+    </property>
+    <property>
+      <name>hbase.cluster.distributed</name>
+      <value>true</value>
+      <description>The mode the cluster will be in. Possible values are
+        false: standalone and pseudo-distributed setups with managed ZooKeeper
+        true: fully-distributed with unmanaged ZooKeeper Quorum (see hbase-env.sh)
+      </description>
+    </property>
+    </configuration>
 
 ####8.1.2. regionservers
 

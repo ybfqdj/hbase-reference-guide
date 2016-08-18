@@ -273,239 +273,305 @@ _默认_:3600000  =1h
 
 **hbase.regionserver.logroll.errors.tolerated**
 
-允许连续WAL关闭错误的次数，超过这个次数，将触发服务器中止，0将使RS中止如果在日志滚动中关闭当前WAL记录者失败。即使一个很小的值（2或3）将允许一个RS短暂越过HDFS错误（allow a region server to ride over transient HDFS errors）  _默认_ 2
+允许连续WAL关闭错误的次数，超过这个次数，将触发服务器中止，0将使RS中止如果在日志滚动中关闭当前WAL记录者失败。即使一个很小的值（2或3）将允许一个RS短暂越过HDFS错误（allow a region server to ride over transient HDFS errors）  _默认_: 2
 
-hbase.regionserver.hlog.reader.impl
+**hbase.regionserver.hlog.reader.impl**
+
 WAL file reader的实现 Default    org.apache.hadoop.hbase.regionserver.wal.ProtobufLogReader
 
-hbase.regionserver.hlog.writer.impl
-Description  The WAL file writer implementation.  Default    org.apache.hadoop.hbase.regionserver.wal.ProtobufLogWriter
+**hbase.regionserver.hlog.writer.impl**
 
-hbase.regionserver.global.memstore.size
+_Description_:  The WAL file writer implementation.  _Default_:    org.apache.hadoop.hbase.regionserver.wal.ProtobufLogWriter
+
+**hbase.regionserver.global.memstore.size**
+
  在新的更新被屏蔽、被迫刷新新之前一个RS中所有memstore的最大size。默认为40%的heap，Updates are blocked and flushes are forced until size of all memstores in a region server hits hbase.regionserver.global.memstore.size.lower.limit. The default value in this configuration has been intentionally left empty in order to honor the old hbase.regionserver.global.memstore.upperLimit property if present.
  
- hbase.regionserver.global.memstore.size.lower.limit
+**hbase.regionserver.global.memstore.size.lower.limit**
+
 Maximum size of all memstores in a region server before flushes are forced. Defaults to 95% of hbase.regionserver.global.memstore.size (0.95). A 100% value for this value causes the minimum possible flushing to occur when updates are blocked due to memstore limiting. The default value in this configuration has been intentionally left empty in order to honor the old hbase.regionserver.global.memstore.lowerLimit property if present.
 
-hbase.regionserver.optionalcacheflushinterval
-Description Maximum amount of time an edit lives in memory before being automatically flushed. 一个日志文件在内存中刷新之前停留的最长时间。Default 1 hour. Set it to 0 to disable automatic flushing.
-Default 3600000
+**hbase.regionserver.optionalcacheflushinterval**
 
-hbase.regionserver.dns.interface
-当使用DNS的时候，RegionServer用来上报的IP地址的网络接口名字。Default   default
+_Description_: Maximum amount of time an edit lives in memory before being automatically flushed. 一个日志文件在内存中刷新之前停留的最长时间。Default 1 hour. Set it to 0 to disable automatic flushing.
 
-hbase.regionserver.dns.nameserver
+_Default_: 3600000
+
+**hbase.regionserver.dns.interface**
+
+当使用DNS的时候，RegionServer用来上报的IP地址的网络接口名字。_Default_:   default
+
+**hbase.regionserver.dns.nameserver**
+
 当使用DNS的时候，RegionServer使用的DNS的域名或者IP 地址，RegionServer用它来确定和master用来进行通讯和展示的域名.
 
-hbase.regionserver.region.split.policy
+**hbase.regionserver.region.split.policy**
+
 一个决定一个region何时被分割的分割策略The various other split policies that are available currently are BusyRegionSplitPolicy, ConstantSizeRegionSplitPolicy, DisabledRegionSplitPolicy, DelimitedKeyPrefixRegionSplitPolicy, and KeyPrefixRegionSplitPolicy. DisabledRegionSplitPolicy blocks manual region splitting.
-Default    org.apache.hadoop.hbase.regionserver.IncreasingToUpperBoundRegionSplitPolicy
+_Default_:    org.apache.hadoop.hbase.regionserver.IncreasingToUpperBoundRegionSplitPolicy
 
-hbase.regionserver.regionSplitLimit
-region数量限制，region分割的数量不会超过这个值，但是这不是一个硬限制，只是作为一个guideline，使regionserver停止分割 默认1000
+**hbase.regionserver.regionSplitLimit**
 
-zookeeper.session.timeout
-ZK会话超时时间 毫秒  ，被用于两种不同的方式，首先备用在ZK客户端，即Hbase用来连接集合。也被HBase用于启动ZK server HBase把这个值传递给zk集群 默认90000
+region数量限制，region分割的数量不会超过这个值，但是这不是一个硬限制，只是作为一个guideline，使regionserver停止分割 _默认_:1000
 
-zookeeper.znode.parent
+**zookeeper.session.timeout**
+
+ZK会话超时时间 毫秒  ，被用于两种不同的方式，首先备用在ZK客户端，即Hbase用来连接集合。也被HBase用于启动ZK server HBase把这个值传递给zk集群 _默认_:90000
+
+**zookeeper.znode.parent**
+
 zooKeeper中的HBase的根ZNode。所有的HBase的ZooKeeper会用这个目录配置相对路径。默认情况下，所有的HBase的ZooKeeper文件路径是用相对路径，所以他们会都去这个目录下面。
-默认：/hbase
 
-zookeeper.znode.acl.parent
+_默认_：/hbase
+
+**zookeeper.znode.acl.parent**
+
 znode的访问控制表 默认acl
 
-hbase.zookeeper.dns.interface
-Description
+**hbase.zookeeper.dns.interface**
+
+_Description_:
 The name of the Network Interface from which a ZooKeeper server should report its IP address.
-Default
-default
+
 ZK server用来上包IP地址的网络接口名字
 
-hbase.zookeeper.dns.nameserver
-Description
-The host name or IP address of the name server (DNS) which a ZooKeeper server should use to determine the host name used by the master for communication and display purposes.
-Default
+_Default_:
 default
+
+**hbase.zookeeper.dns.nameserver**
+
+_Description_:
+The host name or IP address of the name server (DNS) which a ZooKeeper server should use to determine the host name used by the master for communication and display purposes.
 
 ZK server用来确定和master通讯、展示的域名或ip
 
-hbase.zookeeper.peerport
-Description
+_Default_:
+default
+
+
+**hbase.zookeeper.peerport**
+
+_Description_:
 Port used by ZooKeeper peers to talk to each other. See http://hadoop.apache.org/zookeeper/docs/r3.1.1/zookeeperStarted.html#sc_RunningReplicatedZooKeeper for more information.
-Default
-2888
+
 ZK之间通信的端口
 
-hbase.zookeeper.leaderport
-Description
+_Default_:
+2888
+
+**hbase.zookeeper.leaderport**
+
+_Description_:
 Port used by ZooKeeper for leader election. See http://hadoop.apache.org/zookeeper/docs/r3.1.1/zookeeperStarted.html#sc_RunningReplicatedZooKeeper for more information.
-Default
+_Default_:
 3888
+
 ZK选举leader的端口
 
-hbase.zookeeper.useMulti
-Description
+**hbase.zookeeper.useMulti**
+
+_Description_:
 Instructs HBase to make use of ZooKeeper’s multi-update functionality. This allows certain ZooKeeper operations to complete more quickly and prevents some issues with rare Replication failure scenarios (see the release note of HBASE-2611 for an example). IMPORTANT: only set this to true if all ZooKeeper servers in the cluster are on version 3.4+ and will not be downgraded. ZooKeeper versions before 3.4 do not support multi-update and will not fail gracefully if multi-update is invoked (see ZOOKEEPER-1495).
-Default
+_Default_:
 true
+
 指导HBase使用ZK的multi-update功能，这个参数准许某些ZK操作更快得完成，并防止一些罕见的复制失败场景的问题发生
 
-hbase.zookeeper.property.initLimit
-Description
+**hbase.zookeeper.property.initLimit**
+
+_Description_:
 Property from ZooKeeper’s config zoo.cfg. The number of ticks that the initial synchronization phase can take.
-Default
+_Default_:
 10
+
 来自ZK配置zoo.cfg的属性，初始化synchronization阶段的ticks数量限制
 
-hbase.zookeeper.property.syncLimit
-Description
+**hbase.zookeeper.property.syncLimit**
+
+_Description_:
 Property from ZooKeeper’s config zoo.cfg. The number of ticks that can pass between sending a request and getting an acknowledgment.
-Default
+_Default_:
 5
+
 ZooKeeper的zoo.conf中的配置。 发送一个请求到获得承认之间的ticks的数量限制
 
-hbase.zookeeper.property.dataDir
-Description
+**hbase.zookeeper.property.dataDir**
+
+_Description_:
 Property from ZooKeeper’s config zoo.cfg. The directory where the snapshot is stored.
-Default
+_Default_:
 ${hbase.tmp.dir}/zookeeper
+
 快照存储的位置
 
-hbase.zookeeper.property.clientPort
-Description
+**hbase.zookeeper.property.clientPort**
+
+_Description_:
 Property from ZooKeeper’s config zoo.cfg. The port at which the clients will connect.
-Default
+_Default_:
 2181
+
 客户端连接端口
 
-hbase.zookeeper.property.maxClientCnxns
-Description
+**hbase.zookeeper.property.maxClientCnxns**
+
+_Description_:
 Property from ZooKeeper’s config zoo.cfg. Limit on number of concurrent connections (at the socket level) that a single client, identified by IP address, may make to a single member of the ZooKeeper ensemble. Set high to avoid zk connection issues running standalone and pseudo-distributed.
-Default
+_Default_:
 300
+
 单个客户端和ZK集群中单个节点同时连接的数量，这个值可以设置的高点，防止单击和伪分布式中出现连接问题。
 
-hbase.client.write.buffer
-Description
+**hbase.client.write.buffer**
+
+_Description_:
 Default size of the HTable client write buffer in bytes. A bigger buffer takes more memory — on both the client and server side since server instantiates the passed write buffer to process it — but a larger buffer size reduces the number of RPCs made. For an estimate of server-side memory-used, evaluate hbase.client.write.buffer * hbase.regionserver.handler.count
-Default
+_Default_:
 2097152
+
 HTable客户端写缓存的默认大小，这个值越大，消耗内存越大，因为在客户和服务端都要实例花写缓存来处理它。但一个较大的缓冲值，可以减少RPC次数
 
-hbase.client.pause
-Description
+**hbase.client.pause**
+
+_Description_:
 General client pause value. Used mostly as value to wait before running a retry of a failed get, region lookup, etc. See hbase.client.retries.number for description of how we backoff from this initial pause amount and how this pause works w/ retries.
-Default
+_Default_:
 100
+
 一般客户端的暂停时间，在遇到错误需要重试时的等待时间
 
-hbase.client.retries.number
-Description
+**hbase.client.retries.number**
+
+_Description_:
 Maximum retries. Used as maximum for all retryable operations such as the getting of a cell’s value, starting a row update, etc. Retry interval is a rough function based on hbase.client.pause. At first we retry at this interval but then with backoff, we pretty quickly reach retrying every ten seconds. See HConstants#RETRY_BACKOFF for how the backup ramps up. Change this setting and hbase.client.pause to suit your workload.
-Default
+_Default_:
 35
+
 最大重试次数。用在所有需要重试的操作
 
-hbase.client.max.total.tasks
-Description
+**hbase.client.max.total.tasks**
+
+_Description_:
 The maximum number of concurrent tasks a single HTable instance will send to the cluster.
-Default
+_Default_:
 100
+
 一个HTable实例一次送给集群最大任务量
 
-hbase.client.max.perserver.tasks
-Description
+**hbase.client.max.perserver.tasks**
+
+_Description_:
 The maximum number of concurrent tasks a single HTable instance will send to a single region server.
-Default
+_Default_:
 5
+
 一个HTable实例一次送给一个RS的最大任务量
 
-hbase.client.max.perregion.tasks
-Description
+**hbase.client.max.perregion.tasks**
+
+_Description_:
 The maximum number of concurrent connections the client will maintain to a single Region. That is, if there is already hbase.client.max.perregion.tasks writes in progress for this region, new puts won’t be sent to this region until some writes finishes.
-Default
+_Default_:
 1
+
 客户端和一个Region维持的最大连接数，即如果在region中已有hbase.client.max.perregion.tasks写如进程，新的输入不会被送入这个region，直到某些写入完成。
 
-hbase.client.scanner.caching
-Description
+**hbase.client.scanner.caching**
+
+_Description_:
 Number of rows that we try to fetch when calling next on a scanner if it is not served from (local, client) memory. This configuration works together with hbase.client.scanner.max.result.size to try and use the network efficiently. The default value is Integer.MAX_VALUE by default so that the network will fill the chunk size defined by hbase.client.scanner.max.result.size rather than be limited by a particular number of rows since the size of rows varies table to table. If you know ahead of time that you will not require more than a certain number of rows from a scan, this configuration should be set to that row limit via Scan#setCaching. Higher caching values will enable faster scanners but will eat up more memory and some calls of next may take longer and longer times when the cache is empty. Do not set this value such that the time between invocations is greater than the scanner timeout; i.e. hbase.client.scanner.timeout.period
-Default
+_Default_:
 2147483647
+
 当调用scanner的next方法时，而又不在内存中，从服务端一次获取的行数，这个配置和hbase.client.scanner.max.result.size一起试着有效使用网络。默认为整形最大值，这样网络可以用满块大小（由hbase.client.scanner.max.result.size设定）而不会被一个特定的值限制住，因为每个表的行数都不一样。值越大，scanner越快，但会占用更多的内存，当缓存被占满时，下一次调用会越来越慢。Do not set this value such that the time between invocations is greater than the scanner timeout？最终超时
 
+**hbase.client.keyvalue.maxsize**
 
-hbase.client.keyvalue.maxsize
-Description
+_Description_:
 Specifies the combined maximum allowed size of a KeyValue instance. This is to set an upper boundary for a single entry saved in a storage file. Since they cannot be split it helps avoiding that a region cannot be split any further because the data is too large. It seems wise to set this to a fraction of the maximum region size. Setting it to zero or less disables the check.
-Default
+_Default_:
 10485760
+
 一个KeyValue实例的最大值，这个是用来设置存储文件中单个entry的大小上界。因为KeyValue不能被分割，所以可以避免因为数据过大导致region不可分割。明智的做法是把它设为可以被最大region size整除的数。
 
-hbase.client.scanner.timeout.period
-Description
+**hbase.client.scanner.timeout.period**
+_Description_:
 Client scanner lease period in milliseconds.
-Default
+_Default_:
 60000
+
 scanner客户端租赁期限
 
-hbase.client.localityCheck.threadPoolSize
-Default
+**hbase.client.localityCheck.threadPoolSize**
+
+_Default_:
 2
 
-hbase.bulkload.retries.number
-Description
+**hbase.bulkload.retries.number**
+
+_Description_:
 Maximum retries. This is maximum number of iterations to atomic bulk loads are attempted in the face of splitting operations 0 means never give up.
-Default
+_Default_:
 10
+
 分割操作时迭代去原子批量加载尝试的最大次数
 
-hbase.balancer.period
-Description
+**hbase.balancer.period**
+
+_Description_:
 Period at which the region balancer runs in the Master.
-Default
+_Default_:
 300000
+
 Master上运行region balancer的时间间隔
 
-hbase.normalizer.period
-Description
+**hbase.normalizer.period**
+
+_Description_:
 Period at which the region normalizer runs in the Master.
-Default
+_Default_:
 1800000
+
 Master执行region normalizer的间隔
 
-hbase.regions.slop
-Description
+**hbase.regions.slop**
+
+_Description_:
 Rebalance if any regionserver has average + (average * slop) regions. The default value of this parameter is 0.001 in StochasticLoadBalancer (the default load balancer), while the default is 0.2 in other load balancers (i.e., SimpleLoadBalancer).
-Default
+_Default_:
 0.001
+
 如果任意RS有 average + (average * slop)个分区，将执行重新均衡
 
-hbase.server.thread.wakefrequency
-Description
+**hbase.server.thread.wakefrequency**
+
+_Description_:
 Time to sleep in between searches for work (in milliseconds). Used as sleep interval by service threads such as log roller.
-Default
+_Default_:
 10000
 
 
-hbase.server.versionfile.writeattempts
-Description
+**hbase.server.versionfile.writeattempts**
+
+_Description_:
 How many times to retry attempting to write a version file before just aborting. Each attempt is separated by the hbase.server.thread.wakefrequency milliseconds.
-Default
+_Default_:
 3
+
 退出前尝试写版本文件的次数
 
-hbase.hregion.memstore.flush.size
-Description
+**hbase.hregion.memstore.flush.size**
+_Description_:
 Memstore will be flushed to disk if size of the memstore exceeds this number of bytes. Value is checked by a thread that runs every hbase.server.thread.wakefrequency.
-Default
+_Default_:
 134217728
+
 当memstore的大小超过这个值时，将flush到磁盘。这个值被线程每隔--检查一次
 
-hbase.hregion.percolumnfamilyflush.size.lower.bound.min
-Description
+**hbase.hregion.percolumnfamilyflush.size.lower.bound.min**
+_Description_:
 If FlushLargeStoresPolicy is used and there are multiple column families, then every time that we hit the total memstore limit, we find out all the column families whose memstores exceed a "lower bound" and only flush them while retaining the others in memory. The "lower bound" will be "hbase.hregion.memstore.flush.size / column_family_number" by default unless value of this property is larger than that. If none of the families have their memstore size more than lower bound, all the memstores will be flushed (just as usual).
-Default
+_Default_:
 16777216
 
 

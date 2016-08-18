@@ -1640,3 +1640,47 @@ See master.processes.loadbalancer for more information on the LoadBalancer.
       <description>Down the DFS timeout from 60 to 10 seconds.</description>
     </property>
 
+And on the NameNode/DataNode side, set the following to enable 'staleness' introduced in HDFS-3703, HDFS-3912.
+>    
+    <property>
+      <name>dfs.client.socket-timeout</name>
+      <value>10000</value>
+      <description>Down the DFS timeout from 60 to 10 seconds.</description>
+    </property>
+    <property>
+      <name>dfs.datanode.socket.write.timeout</name>
+      <value>10000</value>
+      <description>Down the DFS timeout from 8 * 60 to 10 seconds.</description>
+    </property>
+    <property>
+    <name>ipc.client.connect.timeout</name>
+      <value>3000</value>
+      <description>Down from 60 seconds to 3.</description>
+    </property>
+    <property>
+      <name>ipc.client.connect.max.retries.on.timeouts</name>
+      <value>2</value>
+      <description>Down from 45 seconds to 3 (2 == 3 retries).</description>
+    </property>
+    <property>
+      <name>dfs.namenode.avoid.read.stale.datanode</name>
+      <value>true</value>
+      <description>Enable stale state in hdfs</description>
+    </property>
+    <property>
+      <name>dfs.namenode.stale.datanode.interval</name>
+      <value>20000</value>
+      <description>Down from default 30 seconds</description>
+    </property>
+    <property>
+      <name>dfs.namenode.avoid.write.stale.datanode</name>
+      <value>true</value>
+      <description>Enable stale state in hdfs</description>
+    </property>
+    
+####9.3.5.JMX
+
+JMX (Java Management Extensions) provides built-in instrumentation that enables you to monitor and manage the Java VM. To enable monitoring and management from remote systems, you need to set system property _**com.sun.management.jmxremote.port**_ (the port number through which you want to enable JMX RMI connections) when you start the Java VM. 
+
+##10.动态配置
+从HBase1.0.0开始，可以不用重启server而修改配置，在Hbase shell中有新的操作：**update_config** and **update_all_config** 会提示server去重新读取配置

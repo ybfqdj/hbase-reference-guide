@@ -1,20 +1,20 @@
 #Apache HBase Configuration
 本章将扩展快速开始一张，来进一步扩展HBase的配置。仔细阅读本章，特别是Basic Prerequisites来确保你HBase的测试和部署能够正常进行，并防止数据丢失。
-3. Configuration Files
+##3. Configuration Files
 Apache HBase和Hadoop使用了同样的配置系统，所有的配置文件都在conf/目录，每个节点上要保持同步。
 
-HBase Configuration File Descriptions
+###HBase Configuration File Descriptions
 
-backup-masters
+**backup-masters**
 默认不存在，使用纯文本文件（plain-text），写入哪台主机要启动备份Master进程，一行一个主机
 
-hadoop-metrics2-hbase.properties
+**hadoop-metrics2-hbase.properties**
 用来连接HBase Hadoop’s Metrics2 framework。See the Hadoop Wiki entry for more information on Metrics2. Contains only commented-out examples by default.
 
-hbase-env.cmd and hbase-env.sh
+**hbase-env.cmd and hbase-env.sh**
 用来设定HBase工作环境的脚本，包含java位置、java选项和其他环境变量，文件包含许多注释（commented-out）例子。
 
-hbase-policy.xml
+**hbase-policy.xml**
 默认给RPC服务器使用的文件配置，用来对客户端请求作出授权决定，只在HBase安全启用下使用。
 
 hbase-site.xml

@@ -1339,3 +1339,82 @@ Timeout for regionservers to keep threads in snapshot request pool waiting
 Default
 300000
 
+
+
+8、配置举例
+8.1 基本分布式HBase 安装
+这里是一个由10个节点组成的分布式集群的基本配置举例：节点example0、example1等
+The HBase Master and the HDFS NameNode are running on the node example0. * RegionServers run on nodes example1-example9. * A 3-node ZooKeeper ensemble runs on example1, example2, and example3 on the default ports. * ZooKeeper data is persisted to the directory /export/zookeeper.
+主要配置文件hbase-site.xml, regionservers, and hbase-env.sh
+8.1.1. hbase-site.xml
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <property>
+    <name>hbase.zookeeper.quorum</name>
+    <value>example1,example2,example3</value>
+    <description>The directory shared by RegionServers.
+    </description>
+  </property>
+  <property>
+    <name>hbase.zookeeper.property.dataDir</name>
+    <value>/export/zookeeper</value>
+    <description>Property from ZooKeeper config zoo.cfg.
+    The directory where the snapshot is stored.
+    </description>
+  </property>
+  <property>
+    <name>hbase.rootdir</name>
+    <value>hdfs://example0:8020/hbase</value>
+    <description>The directory shared by RegionServers.
+    </description>
+  </property>
+  <property>
+    <name>hbase.cluster.distributed</name>
+    <value>true</value>
+    <description>The mode the cluster will be in. Possible values are
+      false: standalone and pseudo-distributed setups with managed ZooKeeper
+      true: fully-distributed with unmanaged ZooKeeper Quorum (see hbase-env.sh)
+    </description>
+  </property>
+</configuration>
+
+8.1.2. regionservers
+In this file you list the nodes that will run RegionServers. In our case, these nodes are example1-example9.
+example1
+example2
+example3
+example4
+example5
+example6
+example7
+example8
+example9
+
+9、重要配置
+下面我们列举来一些重要的配置，这小结分为要求的配置和值得一看建议的配置
+9.1 必须的配置
+9.1.1 大集群配置
+如果你有一个具有很多region的集群，一个RS在master刚刚启动后启动（check in）而其他RS还没有是很有可能的，第一个登记的server将被分配所有区域，但这可能不是最优的。要阻止这件事发生up thehbase.master.wait.on.regionservers.mintostart property from its default value of 1.
+9.2建议的配置
+9.2.1 ZK 配置
+zookeeper.session.timeout
+默认的超时时间是3mins，意味着如果一个server宕机了，master要花3mins来察觉并恢复它，你或许想将这个时间调低到1mins或更少，这样master可以更快发现错误。但在改变之前，你要确认你的JVM的garbage collection配置否则一个稍长时间的garbage collection就可能超过ZK session timeout。
+编辑hbase-site.xml并复制到集群中并重启来改变这个配置
+
+9.2.2 HDFS配置
+dfs.datanode.failed.volumes.tolerated
+这个是一个DN正常服务允许坏掉的卷的数量，默认情况下任意卷出错会导致DN关闭 ，你可能回想设置这个到你硬盘的一半
+
+9.2.3  hbase.regionserver.handler.count
+这个设定决定了响应用户请求的线程数量。经验做法是当请求很大时保持这个值较低，当请求内容较小时，把这个值放大。如果客户端请求很小，把这个值设置的和最大客户端数量一样大是安全的。一个典型的例子是给网站服务的集群，因为上传一般不会缓冲，而大部分操作都是get
+将这个值设置的很大很危险，原因是当前在一个RS上发生的过大的输入值会给内存带来太大压力，或甚至触发一个OutOfMemoryError。一个RS运行在低内存下，可能会频繁触发JVM的garbage collector的运行，渐渐会感到停顿（因为所有请求内容所占用的内存不会被释放，无论GC执行多少遍）。一段时间后，整个集群会收到影响，因为每个给RS的请求都会变慢，最终问题会被加剧
+9.2.4大内存机器配置
+HBase有一个合理的保守的配置，这样可以运作在所有的机器上。如果你有台大内存的集群-HBase有8G或者更大的heap,接下来的配置可能会帮助你. TODO.
+9.2.5 压缩
+应该考虑启用ColumnFamily压缩，有好几个选项，通过减少存储文件大小来减少I/O，最终提高性能
+9.2.6配置WAL文件的大小和数量
+HBase使用wal来恢复没有及时写入硬盘中的memstore数据，当发生RS错误时。一般wal略小于HDFS块(by default a HDFS block is 64Mb and a WAL file is ~60Mb).
+Hbase 也对wal数量有限制，这样可以保证系统恢复时不需要太多的数据恢复。这个设置预memstore的配置有关，这样所有必要数据都能适用。It is recommended to allocate enough WAL files to store at least that much data (when all memstores are close to full). For example, with 16Gb RS heap, default memstore settings (0.4), and default WAL file size (~60Mb), 16Gb*0.4/60, the starting point for WAL file count is ~109. However, as all memstores are not expected to be full all the time, less WAL files can be allocated.
+
+

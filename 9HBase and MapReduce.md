@@ -23,4 +23,89 @@ Apache MapReduce是一种用来分析大量数据的软件框架，是Hadoop最�
 > 这个案例可能会出错如果你在HBase的build 目录而不是安装目录运行它。可能会有如下错误：
 > `java.lang.RuntimeException: java.lang.ClassNotFoundException: org.apache.hadoop.hbase.mapreduce.RowCounter$RowCounterMapper`
 > 如果这个发生了，试着将命令改成如下，使它可以使用build环境中***target/directory***下的HBase jars
+> `$ HADOOP_CLASSPATH=${HBASE_BUILD_HOME}/hbase-server/target/hbase-server-VERSION-SNAPSHOT.jar:`${HBASE_BUILD_HOME}/bin/hbase classpath` ${HADOOP_HOME}/bin/hadoop jar ${HBASE_BUILD_HOME}/hbase-server/target/hbase-server-VERSION-SNAPSHOT.jar rowcounter usertable`
 
+***0.96.1至0.98.4的Hbase MapReduce使用者请注意***
+某些使用Hbase的MR工作可能无法启动。The symptom is an exception similar to the following:
+
+> Exception in thread "main" java.lang.IllegalAccessError: class
+    com.google.protobuf.ZeroCopyLiteralByteString cannot access its superclass
+    com.google.protobuf.LiteralByteString
+    at java.lang.ClassLoader.defineClass1(Native Method)
+    at java.lang.ClassLoader.defineClass(ClassLoader.java:792)
+    at java.security.SecureClassLoader.defineClass(SecureClassLoader.java:142)
+    at java.net.URLClassLoader.defineClass(URLClassLoader.java:449)
+    at java.net.URLClassLoader.access$100(URLClassLoader.java:71)
+    at java.net.URLClassLoader$1.run(URLClassLoader.java:361)
+    at java.net.URLClassLoader$1.run(URLClassLoader.java:355)
+    at java.security.AccessController.doPrivileged(Native Method)
+    at java.net.URLClassLoader.findClass(URLClassLoader.java:354)
+    at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+    at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
+    at
+    org.apache.hadoop.hbase.protobuf.ProtobufUtil.toScan(ProtobufUtil.java:818)
+    at
+    org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil.convertScanToString(TableMapReduceUtil.java:433)
+    at
+    org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil.initTableMapperJob(TableMapReduceUtil.java:186)
+    at
+    org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil.initTableMapperJob(TableMapReduceUtil.java:147)
+    at
+    org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil.initTableMapperJob(TableMapReduceUtil.java:270)
+    at
+    org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil.initTableMapperJob(TableMapReduceUtil.java:100)
+...
+
+这是由HBASE-9867版本引入的优化引起的，即引进了类加载依赖。
+
+This affects both jobs using the -libjars option and "fat jar," those which package their runtime dependencies in a nested lib folder.
+
+要满足新类加载器的要求，hadoop的类路径必须包含hbase-protocol.jar。See 46.HBase, MapReduce, and the CLASSPATH for current recommendations for resolving classpath errors.
+
+这个可以在系统范围内被解决通过将hbase-protocol.jar的索引添加到Hadoop的lib目录，通过符号链接或者将jar直接拷贝到目录中。
+
+也可以每次job启动时通过将它包含进HADOOP_CLASSPATH环境变量中解决。当启动job时要打包依赖，下面所有三个job启动命令都可以：
+
+    $ HADOOP_CLASSPATH=/path/to/hbase-protocol.jar:/path/to/hbase/conf hadoop jar MyJob.jar MyJobMainClass
+    $ HADOOP_CLASSPATH=$(hbase mapredcp):/path/to/hbase/conf hadoop jar MyJob.jar MyJobMainClass
+    $ HADOOP_CLASSPATH=$(hbase classpath) hadoop jar MyJob.jar MyJobMainClass
+
+For jars that do not package their dependencies, the following command structure is necessary:
+
+    $ HADOOP_CLASSPATH=$(hbase mapredcp):/etc/hbase/conf hadoop jar MyApp.jar MyJobMainClass -libjars $(hbase mapredcp | tr ':' ',') ...
+
+## 47.MapReduce Scan Caching MR扫描缓存 ##
+
+TableMapReduceUtil恢复了设置对传入扫描对象的缓存选项（返回客户端结果之前可以缓存的行数量），这个功能曾因为0.95版中的bug而被放弃，这个bug已经在0.98.5和0.96.3中解决了选择扫描缓存的优先级顺序如下：
+	
+1. 扫描对象的缓存设置。
+2. 配置选项 hbase.client.scanner.caching中指定的缓存设置，可以在hbase-site.xml中手动设置也可以通过辅助方法TableMapReduceUtil.setScannerCaching()设置。
+3. HConstants.DEFAULT_HBASE_CLIENT_SCANNER_CACHING的默认值，100.
+
+对缓存设置的优化是对客户端请求结果的等待时间和客户端需要获得结果数量之间的一个平衡。如果设置太大，客户端可能会因超时而结束。如果设置太小，扫描需要返回多块结果。如果把扫描想成一把铲子，大的缓存相当于一个大铲子，小铲子意味着为了填满bucket需要铲更多次。
+
+上面提到的优先级列表允许您设置一个合理的默认值，并为特定的操作重写它。
+
+## 48. Bundled HBase MapReduce Jobs##
+The HBase JAR also serves as a Driver for some bundled MapReduce jobs. To learn about the bundled MapReduce jobs, run the following command.
+
+    $ ${HADOOP_HOME}/bin/hadoop jar ${HBASE_HOME}/hbase-server-VERSION.jar
+    An example program must be given as the first argument.
+	Valid program names are:
+	  copytable: Export a table from local cluster to peer cluster
+      completebulkload: Complete a bulk data load.
+      export: Write table data to HDFS.
+      import: Import data written by Export.
+      importtsv: Import data in TSV format.
+      rowcounter: Count rows in HBase table
+
+Each of the valid program names are bundled MapReduce jobs. To run one of the jobs, model your command after the following example.
+
+    $ ${HADOOP_HOME}/bin/hadoop jar ${HBASE_HOME}/hbase-server-VERSION.jar rowcounter myTable
+
+## 49.HBase作为一个MapReduce作业的数据源和数据接收器 ##
+HBase可以被用作mapreduce的数据源，TableInputFormat 和数据接收器，TableOutputFormat或MultiTableOutputFormat。写Mr作业，读或写HBase,最好是子类TableMapper and/or tableReducer。See the do-nothing pass-through classes IdentityTableMapper and IdentityTableReducer for basic usage. For a more involved example, see RowCounter or review the org.apache.hadoop.hbase.mapreduce.TestTableMapReduce unit test.
+
+如果运行MR job时使用HBase作为数据源或数据接收器，需要在配置中指定源和结果表及列名。
+
+当你从HBase中读时， TableInputFormat从HBase中请求regions表并制成map,或者是map-per-region或是mapreduce.job.maps map，无论哪个是更小的。如果job只有两个map，提高mapreduce.job.maps使其大于regions数量。

@@ -215,3 +215,162 @@ For those interested in implementing custom splitters, see the method getSplits 
       return put;
   	  }
 	}
+
+事实上这里已经不存在reducer步骤，所以TableOutTable负责向目标表发送Put操作。
+
+这仅仅是个例子，开发者可以选择不使用TableOutputFormat而自己连接目标表格。
+
+### 53.3. HBase MapReduce Read/Write Example With Multi-Table Output###
+TODO: example for MultiTableOutputFormat.
+
+### 53.4. HBase MapReduce Summary to HBase Example###
+下面的例子是使用HBase作为MR的数据源和数据接收端来完成一个总结步骤，这个例子将统计表中某个值的不同实例的数目。并将那些计数放入其他表中。​
+
+    Configuration config = HBaseConfiguration.create();
+	Job job = new Job(config, "ExampleReadWrite");
+	job.setJarByClass(MyReadWriteJob.class);   //包含 mapper的类
+		
+	Scan scan = new Scan();
+	scan.setCashing(500);  //Scan中默认为1，对MR job来说不太好
+	scan.setCasheBlocks(false);  //对MR JOB不要设置为true
+	//设置其他scan属性
+
+    TableMapReduceUtil.initTableMapperJob(
+  	  sourceTable,        // input table
+  	  scan,               // Scan instance to control CF and attribute selection
+      MyMapper.class,     // mapper class
+      Text.class,         // mapper output key
+      IntWritable.class,  // mapper output value
+      job);
+	TableMapReduceUtil.initTableReducerJob(
+      targetTable,        // output table
+      MyTableReducer.class,    // reducer class
+      job);
+	job.setNumReduceTasks(1);   // at least one, adjust as required
+
+	boolean b = job.waitForCompletion(true);
+	if(!b){
+		throw new IOException("error with job");
+	}
+
+在这个例子中将字符串值映射为一列被选为总结值。This value is used as the key to emit from the mapper，and an IntWritable represents an instance counter.
+
+	public static class MyMapper extends TableMapper<Text, IntWritable> {
+	  public static final byte[] CF = "cf".getBytes();
+  	  public static final byte[] ATTR1 = "attr1".getBytes();
+
+	  private final IntWritable ONE = new IntWritable(1);
+  	  private Text text = new Text();
+
+	  public void map(ImmutableBytesWritable row, Result value, Context context) throws IOException, InterruptedException {
+    		String val = new String(value.getValue(CF, ATTR1));
+    		text.set(val);     // we can only emit Writables...
+    		context.write(text, ONE);
+  		}
+	}
+
+在Reducer程序中， "ones"被累计（就像其他MR例子中那样），然后发出一个Put。
+    
+    public static class MyTableReducer extends TableReducer<Text, IntWritable, ImmutableBytesWritable>  {
+  		public static final byte[] CF = "cf".getBytes();
+  		public static final byte[] COUNT = "count".getBytes();
+
+  	public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+    		int i = 0;
+    		for (IntWritable val : values) {
+      			i += val.get();
+    		}
+   			Put put = new Put(Bytes.toBytes(key.toString()));
+    		put.add(CF, COUNT, Bytes.toBytes(i));
+
+    		context.write(null, put);
+  		}
+	}
+
+### 53.5 HBase MapReduce Summary to File Example ###
+这个和上面总结的例子很像，不同的是这里使用Hbase作为MR数据源，而作为HDFS作为接收端。不同之处在任务设定和reducer中，mapper还是一样。
+
+	Configuration config = HBaseConfiguration.create();
+	Job job = new Job(config,"ExampleSummaryToFile");
+	job.setJarByClass(MySummaryFileJob.class);     // class that contains mapper and reducer
+
+	Scan scan = new Scan();
+	scan.setCaching(500);        // 1 is the default in Scan, which will be bad for MapReduce jobs
+	scan.setCacheBlocks(false);  // don't set to true for MR jobs
+	// set other scan attrs
+
+	TableMapReduceUtil.initTableMapperJob(
+  	  sourceTable,        // input table
+  	  scan,               // Scan instance to control CF and attribute selection
+      MyMapper.class,     // mapper class
+      Text.class,         // mapper output key
+      IntWritable.class,  // mapper output value
+      job);
+    job.setReducerClass(MyReducer.class);    // reducer class
+    job.setNumReduceTasks(1);    // at least one, adjust as required
+    FileOutputFormat.setOutputPath(job, new Path("/tmp/mr/mySummaryFile"));  // adjust directories as required
+
+	boolean b = job.waitForCompletion(true);
+	if (!b) {
+  	  throw new IOException("error with job!");
+	}
+
+如上所述， 这个例子的Mapper和之前的一样。对于Reducer，使用”generic“代替继承TableMapper并发出puts
+
+    public static class MyReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+	
+		public void reduce(Text key, Iteralbe<IntWritable> values, Context context) throw IOException, InterruptedException{
+			int i = 0;
+			for (IntWritable val: values){
+				i += val.get();
+			}
+			context.write(key, new IntWritable(i));
+		}
+	}
+
+### 53.6  HBase MapReduce Summary to HBase Without Reducer ###
+没有reducer也可以进行总结，如果使用Hbase作为reducer。
+
+一个HBase目标表有必要为job总结而存在。Table方法incrementColumnValue将使用自增值。从性能角度，每个map任务保持值的Map与它的值一起增加很有意义，当mapper的cleanup方法时，每个key更新一次。然而， 你的mileage可能会有所不同，这取决于要处理的行数和唯一键。
+
+最后，总结结果在Hbase中。
+    
+### 53.7 HBase MapReduce Summary to RDBMS ###
+有时，产生总结放入RDBMS中更合适。对这些例子来说，自定义reducer产生总结直接到RDBMS中是可能的。setup方法可以连接到RDBMS上，cleanup方法可以断开这个连接。
+
+理解job的reducer数量将影响总结的实现，你必须将这个设计到你的reducer中。特别地，不管是以singleton来运行还是multiple来运行reducer。正确或错误，根据用例。越多的reducer被布置到job中，越多的RDBMS同步连接会被建立,this will scale, but only to a point.(?)
+
+    public static class MyRdbmsReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+		private Connection c = null;
+	
+		public void setup(Context context) {
+			//创建 DB连接。。。
+		}
+
+		public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+			//do summarisation
+			// 本例中Text是键， 但这只是个例子
+		}
+
+		public void cleanup(Context context){
+			//关闭db连接
+		}
+	}
+
+In the end, the summary results are written to your RDBMS table/s.
+
+## 54.  在一个MR 任务中连接其他 Hbase 表##
+尽管当前框架内允许一个HBase表作为MR任务的输入，其他HBase表可作为查找表访问，在一个MR job中在Mapper的setup方法中创建一个表的实例。
+
+    public class MyMapper extends TableMapper<Text,LongWritable> {
+	  public Talbe myOtherTable;
+
+	  public void setup(Context context) {
+		//这里创建连接到集群上并保存下来或使用已存在表的连接
+		myOtherTable = connection.getTable("myOtherTable");
+	  }
+
+	  public void map(ImmutableBytesWritable row, Result value, Context context) throws IOException,InterruptedException {
+		//处理结果
+		//使用 ‘myOtherTable’查询
+	  }

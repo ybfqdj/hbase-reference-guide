@@ -108,4 +108,110 @@ HBase可以被用作mapreduce的数据源，TableInputFormat 和数据接收器�
 
 如果运行MR job时使用HBase作为数据源或数据接收器，需要在配置中指定源和结果表及列名。
 
-当你从HBase中读时， TableInputFormat从HBase中请求regions表并制成map,或者是map-per-region或是mapreduce.job.maps map，无论哪个是更小的。如果job只有两个map，提高mapreduce.job.maps使其大于regions数量。
+当你从HBase中读时， TableInputFormat从HBase中请求regions表并制成map,或者是map-per-region或是mapreduce.job.maps map，无论哪个是更小的。如果job只有两个map，提高mapreduce.job.maps使其大于regions数量。如果你在每个regionServer节点上都运行了TaskTracker/NodeManager，Maps将运行在相邻的TaskTracker/NodeManager上。当向HBase写入时，可以避免Reduce步骤并从map中写回HBase。当任务不需要分类和整理，这种map发出数据的方法会管用。插入时, Hbase 'sorts'中没有double-sorting（以及对你的MR集群shuffling data），除非你需要这个。如果不需要Reduce，map可能会发出处理的记录数来报告任务结束，或将Reduce数设为0，并使用TableOutputFormat。如果在你的案例中，有必要启动Reduce，通常你应该使用多个reducers，这样负载可以分布到整个HBase集群中。
+
+HRegionPartitioner，HBase新的分割，可启动与regions同样数量的reducers.如果你的表格很大而上传不会大大改变现有region的数量，HRegionPartitioner很合适。 否则使用默认的分割方法。
+
+
+## 50. 批量导入时直接写入HFiles ##
+如果你在导入一张新的表格，可以忽略HBase API直接将内容写入文件系统，格式化成HBase数据文件（HFiles.）导入将运行得更快，也许是一个数量级的更快。
+
+## 51. RowCounter Example ##
+包括RowCounter的MR job使用TableInputFormat并记录指定表中行的数量。 To run it, use the following command:
+
+    $ ./bin/hadoop jar hbase-X.X.X.jar
+
+这将引用HBase MapReduce Driver类。在提供的选择中选择rowcounter。会将rowcounter使用建议打印到标准输出中。指定表名、计数的列以及输出目录。
+
+## 52.map任务分解  ##
+### 52.1. 默认的HBase MapReduce分离器 ###
+在MapReduce job中使用TableInputFormat从HBase表中请求数据时，分离器将为表的每个region生成一个map任务。因此， 如果表中有100个regions这有100个map任务，不管扫描操作中选择了多少列族。
+
+### 52.2. 自定义分离器 ###
+For those interested in implementing custom splitters, see the method getSplits in TableInputFormatBase. That is where the logic for map-task assignment resides.
+
+## 53. HBase MapReduce Examples ##
+### 53.1. HBase MapReduce Read Example###
+下面是以只读方式使用HBase作为MR数据源的例子。明确地，这里只有Mapper实例而没有Reducer，不会从Mapper中发出任何数据。
+
+    Configuration config = HBaseConfiguration.create();
+	Job job = new Job(config, "ExampleRead");
+	job.setJarByClass(MyReadJob.class);     // class that contains mapper
+
+    Scan scan = new Scan();
+	scan.setCaching(500);        // 1 is the default in Scan, which will be bad for MapReduce jobs
+	scan.setCacheBlocks(false);  // don't set to true for MR jobs
+	// set other scan attrs
+    ...
+	
+    TableMapReduceUtil.initTableMapperJob(
+	 tableName,        // input HBase table name
+	 scan,             // Scan instance to control CF and attribute selection
+	 MyMapper.class,   // mapper
+	 null,             // mapper output key
+	 null,             // mapper output value
+	 job);
+	job.setOutputFormatClass(NullOutputFormat.class);   // because we aren't emitting anything from mapper
+
+    boolean b = job.waitForCompletion(true);
+	if (!b) {
+		throw new IOException("error with job!");
+	}
+
+...mapper实例将extend TableMapper...
+
+    public static class MyMapper extends TableMapper<Text, Text> {
+		 public void map(ImmutableBytesWritable row, Result value, Context context) throws InterruptedException, IOException {
+			//process data for the row from the Result instance.
+		}
+	}
+
+### 53.2. HBase MapReduce Read/Write Example ###
+下面是个使用HBase即作为MR的数据源又作为数据接收端。这个例子只是将数据从一张表拷贝到另一张表。
+
+    Configuration config = HBaseConfiguration.create();
+		Job job = new Job(config, "ExampleReadWrite");
+		job.setJarByClass(MyReadWriteJob.class);   //包含 mapper的类
+		
+		Scan scan = new Scan();
+		scan.setCashing(500);  //Scan中默认为1，对MR job来说不太好
+		scan.setCasheBlocks(false);  //对MR JOB不要设置为true
+		//设置其他scan属性
+		
+		TableMapReduceUtil.intTableMapperJob(
+				sourceTable,	//input table
+				scan,			//Scan instance to control CF and attribute selection
+				MyMapper.class, //mapper class
+				null,			//mapper output key
+				null,			//mapper output value
+				job);
+		TableMapReduceUtil.initTableReducerJob(
+				targetTable,	//output table
+				null,			//reducer class
+				job);
+		job.setNumReduceTasks(0);
+		
+		boolean b = job.waitForCompletion(true);
+		if(!b){
+			throw new IOException("error with job!");
+		}
+
+这里要解释下TableMapReduceUtil的工作内容，特别是对于reducer.TableOutputFormat，被用作outputFormat类，许多参数被在config上设置（如，TableOutputFormat.OUTPUT_TABLE ），同样设置reducer输出值为ImmutableBytesWritable ,reducer值为Writable.这些可以被programmer设置在job和conf上，但是TableMapReduceUtil试着使事情简单。
+
+下面的mapper例子，将创建一个put操作，并匹配输入结果并发送它。注意这是CopyTable utility所完成的。
+
+    public static class MyMapper extends TableMapper<ImmutableBytesWritable, Put>  {
+
+  	public void map(ImmutableBytesWritable row, Result value, Context context) throws IOException, InterruptedException {
+    // this example is just copying the data from the source table...
+      	context.write(row, resultToPut(row,value));
+    	}
+
+    private static Put resultToPut(ImmutableBytesWritable key, Result result) throws IOException {
+      Put put = new Put(key.get());
+      for (KeyValue kv : result.raw()) {
+        put.add(kv);
+     	 }
+      return put;
+  	  }
+	}

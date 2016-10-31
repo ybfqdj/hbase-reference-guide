@@ -374,3 +374,48 @@ In the end, the summary results are written to your RDBMS table/s.
 		//处理结果
 		//使用 ‘myOtherTable’查询
 	  }
+
+## 55.  预测执行 ##
+通常建议使用HBase作为数据源的MR jobs关闭预测执行。这个可以通过配置在每个job基础上实现， 或者集群上实现。特别是对那些长时间运行的工作，预测执行将创建重复的map任务，这将你的数据写两遍到HBase中，这可能不是你想要的。
+
+See **spec.ex** for more information.
+
+## 56.Cascading 级联 ##
+
+级联是MR的可替换API,事实上还是使用MapReduce，但允许你以一种简单的方法写MapReduce代码。
+
+下面是Cascading Flow的例子，将数据”汇入“Hbase集群。同样的hBaseTap API也可以被用来”源“数据。
+
+	//从默认文件系统中读取数据
+	//发出两个字段，：“offset偏移”和“line行”
+	Tap source = new Hfs(new TextLine(), inputFileLhs);
+
+	//在一个HBase集群中存储数据
+	//接收字段："num","lower"和"upper"
+	//will automatically scope incoming fields to their proper familyname, "left" or "right"
+	Fields keyFields = new Fields("num");
+	String[]  familyNames = {"left", "right"};
+	Fields[] valueFields = new Fields[] {new Fields( "lower" ), new Fields( "upper" )};
+	Tap hBaseTap = new HBaseTap( "multitable", new HBaseScheme( keyFields, familyNames, valueFields ), SinkMode.REPLACE );
+
+	//分配一个简单的管道将输入解析成字段
+	//现实应用可能会链接多个管道一起进行更复杂的处理
+	Pipe parsePipe = new Each("insert", new Fields("line"), new RegexSplitter(new Fields("num", "lower","upper"), " "));
+
+	//"plan"一个集群执行流
+	//这将the source Tap and hBaseTap和parsePipe连接起来
+	Flow parseFlow = new FlowConnector(properties).connect(source, hBaseTap, parsePipe);
+
+	//start the flow, and block until complete
+	parseFlow.complete();
+
+	//打开Hbase表的迭代器来填充数据
+	TupleEntryIterator iterator = parseFlow.openSink();
+
+	while(iterator.hasNext())
+	{
+		//将每个tuple从HBase中打印出来
+		System.out.println("iterator.next()="+ iterator.next());	
+	}
+
+	iterator.close();
